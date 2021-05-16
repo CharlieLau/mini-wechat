@@ -1,6 +1,6 @@
 
-const loadConfig = require('../server/config')
-const util = require('../server/util')
+const loadConfig = require('./config')
+const util = require('./util')
 const cache = require('./cache')
 const Concat = require('concat-with-sourcemaps')
 
