@@ -1,0 +1,141 @@
+#!/usr/bin/env node
+
+const path = require('path')
+const fs = require('fs')
+const childProcess = require('child_process')
+const chalk = require('chalk')
+const has = require('has-value')
+const server = require('../server/index')
+const util = require('../server/util')
+const loadConfig = require('../server/config')
+const core = require('../server/core')
+
+const startTime = new Date()
+const distPath = path.resolve(__dirname, '../miniChatTmp/dist');
+const exec = (...args) => Promise.resolve(childProcess.exec(...args))
+
+    ; (async () => {
+        await build()
+    })();
+
+
+async function build() {
+    if (!fs.existsSync(distPath)) {
+        fs.mkdirSync(distPath, { recursive: true });
+    }
+    console.log('文件将生成到：\n' + distPath)
+
+    const assetsPath = path.resolve(__dirname, '../server/template/assets')
+
+    await exec(
+        'cp -rf ' +
+        JSON.stringify(assetsPath) +
+        '/* ' +
+        distPath
+    )
+
+    // 拷贝 项目内的其他资源
+    await util.copy('./', distPath, {
+        exclude: {
+            basename: ['.git', 'node_modules'],
+            extname: ['.js', '.json', '.wxss', '.css', '.git', '.md', '.wxml']
+        }
+    })
+
+    const appConfig = await loadConfig()
+
+    // index.html
+    await core.getIndex(appConfig).then(content =>
+        util.createFilePromise(distPath, 'index.html', content)
+    )
+
+    // app-service.js
+    await core
+        .getServiceJs()
+        .then(content => {
+            util.createFilePromise(
+                distPath + '/script',
+                'app-service.js',
+                content
+            )
+        })
+
+    // app.css
+    await core
+        .getAppWxss('./app')
+        .then(content =>
+            util.createFilePromise(
+                distPath + '/css',
+                'app.css',
+                content.replace(/\/\*#\s*sourceMappingURL=.*\*\/$/, '')
+            )
+        )
+    // pages
+    const {pages,tabBar} = appConfig
+
+    await Promise.all(pages.map(async (path)=>{
+        let fullpath = path.replace(/^(\/|\.\/)/, '')
+        let paths = fullpath.split('/')
+        let file = paths.pop()
+        path = paths.join('/')
+
+        let [wxmlAndTags,wxss,service] = await core.getPage(fullpath)
+
+        
+        // page generateFunc
+        let content = wxmlAndTags[0] // .replace(/(src=[\"\']?)\/+/,"$1");//对以/开始的路径做处理
+        if (wxss) {
+            wxss = wxss
+            .replace(/\/\*#\s*sourceMappingURL=.*\*\/$/, '')
+            .replace(/(position:\s*fixed\s*[^}]*[^w]top:)\s*0\s*;/g, '$142px;')
+          if (
+            has(tabBar, 'list') &&
+            tabBar.list.findIndex(
+              item => item.pagePath.replace(/^(\/|\.\/)/, '') === fullpath
+            ) !== -1
+          ) {
+            if (tabBar.position !== 'top') {
+                wxss = wxss.replace(
+                /(position:\s*fixed\s*[^}]*[^w]bottom:)\s*0\s*;/g,
+                '$156px;'
+              )
+            }
+          }
+        } else {
+            wxss = ''
+        }
+        content += '@code-separator-line:' + wxss // page css
+        if (!service) service = ''
+        content += '@code-separator-line:' + service // app-service
+        content += '@code-separator-line:' + JSON.stringify(wxmlAndTags[1]) // tags
+        return util
+          .createFilePromise(
+            distPath + '/src/' + path,
+            file + '.js',
+            content
+          )
+          .catch(err => console.error(err))
+    }))
+
+    // 删除 空文件夹
+    util.rmEmptyDirsSync(distPath)
+
+    printRunTime()
+
+
+    await server.listen()
+
+}
+
+
+/**
+ *   记录构建时间
+ */
+ function printRunTime () {
+    const endTime = new Date()
+    console.log(
+      chalk.yellow(
+        `Build Complete. Time elapsed: ${(endTime - startTime) / 1000}s`
+      )
+    )
+  }

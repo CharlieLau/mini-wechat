@@ -1,0 +1,5 @@
+<!-- index.wxml -->
+<view class="container">
+  <view class="usermotto">{{count}}</view>
+  <button bindtap="refresh">增加</button>
+</view>

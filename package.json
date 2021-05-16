@@ -1,0 +1,36 @@
+{
+  "name": "mini-webchat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bin/index",
+  "bin": {
+    "minichat": "bin/index"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "liuqingqing05",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/core": "^7.14.2",
+    "@babel/plugin-transform-runtime": "^7.14.2",
+    "@babel/preset-env": "^7.14.2",
+    "@babel/runtime": "^7.14.0",
+    "chalk": "^4.1.1",
+    "concat-with-sourcemaps": "^1.1.0",
+    "et-improve": "^1.0.0",
+    "fs-extra": "^10.0.0",
+    "glob": "^7.1.7",
+    "has-value": "^2.0.2",
+    "koa": "^2.13.1",
+    "koa-compress": "^5.0.1",
+    "koa-router": "^10.0.0",
+    "koa-static": "^5.0.0",
+    "merge": "^2.1.1",
+    "node-parallel": "^0.1.6",
+    "source-map": "^0.7.3",
+    "uglify-js": "^3.13.6",
+    "wxml-transpiler": "^1.0.5"
+  }
+}
